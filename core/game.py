@@ -37,27 +37,19 @@ class Game:
             return int(self.end_time - self.start_time)
 
     def handle_left_click(self, x: int, y: int):
-        """Обработка левого клика: открытие клетки или Аккорд."""
         if self.state in (GameState.WON, GameState.LOST):
             return
         
         cell = self.board.get_cell(x, y)
-        if not cell or cell.is_flagged:
+        # Если клетка с флагом или уже открыта - одиночный клик ничего не делает
+        if not cell or cell.is_flagged or cell.is_open:
             return
 
-        # Если это самый первый клик в игре
         if self.state == GameState.NOT_STARTED:
             self._start_game(x, y)
-            # Обновляем ссылку на ячейку, так как доска была пересоздана
             cell = self.board.get_cell(x, y)
 
-        if cell.is_open:
-            # Если кликаем по уже открытой цифре - пытаемся сделать Аккорд
-            self._handle_chording(x, y)
-        else:
-            # Обычное открытие закрытой клетки
-            self._open_cell(x, y)
-
+        self._open_cell(x, y)
         self._check_win_condition()
 
     def handle_right_click(self, x: int, y: int):
@@ -72,6 +64,28 @@ class Game:
         # Переключаем статус флага
         cell.is_flagged = not cell.is_flagged
         self.flags_placed += 1 if cell.is_flagged else -1
+
+    def handle_both_click(self, x: int, y: int):
+        """Обработка Аккорда (колесико мыши или ЛКМ+ПКМ)."""
+        if self.state in (GameState.WON, GameState.LOST):
+            return
+            
+        cell = self.board.get_cell(x, y)
+        # Аккорд работает только если кликнуть по ОТКРЫТОЙ клетке с цифрой
+        if not cell or not cell.is_open or cell.adjacent_mines == 0:
+            return
+            
+        # Считаем флаги вокруг
+        neighbors = self.board.get_neighbors(x, y)
+        flags_count = sum(1 for n in neighbors if n.is_flagged)
+
+        # Если количество флагов СТРОГО равно цифре
+        if flags_count == cell.adjacent_mines:
+            for n in neighbors:
+                if not n.is_flagged and not n.is_open:
+                    self._open_cell(n.x, n.y)
+                    
+        self._check_win_condition()
 
     def _start_game(self, start_x: int, start_y: int):
         """Инициализация поля при первом клике."""
@@ -121,17 +135,26 @@ class Game:
                     self._open_cell(n.x, n.y)
 
     def _check_win_condition(self):
-        """Проверяет, открыты ли все безопасные ячейки."""
-        if self.state == GameState.PLAYING:
-            total_safe_cells = (self.width * self.height) - self.num_mines
-            if self.opened_cells == total_safe_cells:
-                self.state = GameState.WON
-                self.end_time = time.time()
-                
-                # Автоматически ставим флаги на оставшиеся закрытые мины для красоты
-                for y in range(self.height):
-                    for x in range(self.width):
-                        cell = self.board.get_cell(x, y)
-                        if not cell.is_open and not cell.is_flagged:
-                            cell.is_flagged = True
-                            self.flags_placed += 1
+        """Проверяет победу путем прямого подсчета неоткрытых безопасных ячеек."""
+        if self.state != GameState.PLAYING:
+            return
+
+        # Надежный способ: считаем, сколько осталось закрытых клеток
+        closed_cells_count = 0
+        for y in range(self.height):
+            for x in range(self.width):
+                if not self.board.get_cell(x, y).is_open:
+                    closed_cells_count += 1
+
+        # Если количество закрытых клеток равно количеству мин - это победа!
+        if closed_cells_count == self.num_mines:
+            self.state = GameState.WON
+            self.end_time = time.time()
+            
+            # Автоматически ставим флаги на все оставшиеся закрытые мины (для красоты)
+            for y in range(self.height):
+                for x in range(self.width):
+                    cell = self.board.get_cell(x, y)
+                    if not cell.is_open and not cell.is_flagged:
+                        cell.is_flagged = True
+                        self.flags_placed += 1

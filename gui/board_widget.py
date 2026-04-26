@@ -1,45 +1,72 @@
 from PyQt5.QtWidgets import QWidget, QGridLayout, QPushButton
 from PyQt5.QtCore import Qt, pyqtSignal
-from core.game import GameState
 
 class CellButton(QPushButton):
-    # Кастомные сигналы для передачи координат клика
     left_clicked = pyqtSignal(int, int)
     right_clicked = pyqtSignal(int, int)
+    both_clicked = pyqtSignal(int, int)
 
     def __init__(self, x: int, y: int):
         super().__init__()
         self.x = x
         self.y = y
-        self.setFixedSize(30, 30)  # Жестко задаем размер ячейки
-        self.setFocusPolicy(Qt.NoFocus) # Убираем рамку фокуса при клике
+        self.setFixedSize(30, 30)
+        self.setFocusPolicy(Qt.NoFocus)
+        
+        # Надежный трекер состояния кнопок мыши
+        self._left_pressed = False
+        self._right_pressed = False
+        self._chord_executed = False
+
+    def mousePressEvent(self, event):
+        if event.button() == Qt.LeftButton:
+            self._left_pressed = True
+        elif event.button() == Qt.RightButton:
+            self._right_pressed = True
+            
+        # Аккорд срабатывает: Колесиком ИЛИ (ЛКМ + ПКМ)
+        if event.button() == Qt.MiddleButton or (self._left_pressed and self._right_pressed):
+            self.both_clicked.emit(self.x, self.y)
+            self._chord_executed = True
 
     def mouseReleaseEvent(self, event):
+        # Отпускание кнопок
         if event.button() == Qt.LeftButton:
-            self.left_clicked.emit(self.x, self.y)
+            self._left_pressed = False
+            # Если это был обычный клик (не аккорд), вызываем открытие
+            if not self._chord_executed:
+                self.left_clicked.emit(self.x, self.y)
+                
         elif event.button() == Qt.RightButton:
-            self.right_clicked.emit(self.x, self.y)
-        super().mouseReleaseEvent(event)
+            self._right_pressed = False
+            if not self._chord_executed:
+                self.right_clicked.emit(self.x, self.y)
+                
+        # Когда отпустили ВСЕ кнопки, сбрасываем статус аккорда
+        if not self._left_pressed and not self._right_pressed:
+            self._chord_executed = False
 
 class BoardWidget(QWidget):
     def __init__(self, game):
         super().__init__()
         self.game = game
-        self.buttons = {}  # Словарь для быстрого доступа к кнопкам по координатам (x, y)
+        self.buttons = {}
         self.init_ui()
 
     def init_ui(self):
         self.layout = QGridLayout()
-        self.layout.setSpacing(0) # Убираем отступы между кнопками
+        self.layout.setSpacing(0)
         self.layout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(self.layout)
 
-        # Создаем сетку кнопок
         for y in range(self.game.height):
             for x in range(self.game.width):
                 btn = CellButton(x, y)
+                # Подключаем все три сигнала
                 btn.left_clicked.connect(self.on_left_click)
                 btn.right_clicked.connect(self.on_right_click)
+                btn.both_clicked.connect(self.on_both_click)
+                
                 self.layout.addWidget(btn, y, x)
                 self.buttons[(x, y)] = btn
 
@@ -51,6 +78,10 @@ class BoardWidget(QWidget):
         self.game.handle_right_click(x, y)
         self.update_board()
 
+    def on_both_click(self, x, y):
+        self.game.handle_both_click(x, y)
+        self.update_board()
+
     def update_board(self):
         """Синхронизирует внешний вид кнопок с состоянием ядра игры."""
         for y in range(self.game.height):
@@ -58,23 +89,32 @@ class BoardWidget(QWidget):
                 cell = self.game.board.get_cell(x, y)
                 btn = self.buttons[(x, y)]
 
-                # В будущем здесь мы будем назначать QSS-классы или картинки (icons)
+                btn.setEnabled(True) 
+
                 if cell.is_open:
-                    btn.setEnabled(False) # Отключаем нажатие для открытой
+                    btn.setProperty("is_open", True)
+                    btn.setProperty("is_flagged", False)
+                    
                     if cell.is_mine:
                         btn.setText("💣")
-                        btn.setStyleSheet("background-color: red; color: black;")
+                        btn.setProperty("is_mine", True)
                     elif cell.adjacent_mines > 0:
                         btn.setText(str(cell.adjacent_mines))
-                        btn.setStyleSheet("background-color: #ddd; font-weight: bold;")
+                        btn.setProperty("is_mine", False)
                     else:
                         btn.setText("")
-                        btn.setStyleSheet("background-color: #ddd;")
+                        btn.setProperty("is_mine", False)
                 else:
-                    btn.setEnabled(True)
+                    btn.setProperty("is_open", False)
+                    btn.setProperty("is_mine", False)
+                    
                     if cell.is_flagged:
                         btn.setText("🚩")
-                        btn.setStyleSheet("color: red;")
+                        btn.setProperty("is_flagged", True)
                     else:
                         btn.setText("")
-                        btn.setStyleSheet("") # Сбрасываем стиль до дефолтного
+                        btn.setProperty("is_flagged", False)
+
+                btn.style().unpolish(btn)
+                btn.style().polish(btn)
+                btn.update()

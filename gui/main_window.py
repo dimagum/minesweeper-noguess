@@ -1,10 +1,10 @@
 from PyQt5.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, 
-                             QLabel, QMessageBox, QMenuBar)
+                             QLabel, QMessageBox, QStackedWidget, QPushButton)
 from PyQt5.QtCore import QTimer, Qt
 from core.game import Game, GameState
 from gui.board_widget import BoardWidget
+from gui.main_menu import MainMenuWidget
 
-# Настройки уровней сложности
 DIFFICULTIES = {
     "Beginner": (9, 9, 10),
     "Easy": (12, 12, 20),
@@ -18,95 +18,100 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("No-Guess Minesweeper")
-        self.current_difficulty = "Beginner"
+        self.setMinimumSize(400, 600) # Минимальный размер для красивого меню
         
-        # UI элементы
-        self.timer_label = None
-        self.mines_label = None
+        self.game = None
         self.board_widget = None
         
-        # Системный таймер GUI
+        # Настраиваем QStackedWidget для переключения экранов
+        self.stacked_widget = QStackedWidget()
+        self.setCentralWidget(self.stacked_widget)
+        
+        # Экран 1: Главное меню
+        self.menu_widget = MainMenuWidget(DIFFICULTIES, self.start_new_game, self.resume_game)
+        self.stacked_widget.addWidget(self.menu_widget)
+        
+        # Экран 2: Игровой процесс
+        self.game_container = QWidget()
+        self.game_layout = QVBoxLayout()
+        self.game_layout.setSizeConstraint(QVBoxLayout.SetFixedSize)
+        self.game_container.setLayout(self.game_layout)
+        self.stacked_widget.addWidget(self.game_container)
+        
+        # Таймер
         self.gui_timer = QTimer(self)
         self.gui_timer.timeout.connect(self.update_hud)
-        self.gui_timer.start(100) # Обновляем UI 10 раз в секунду
 
-        self.init_menu()
-        self.start_new_game()
-
-    def init_menu(self):
-        menu_bar = self.menuBar()
-        game_menu = menu_bar.addMenu("Игра")
-
-        new_game_action = game_menu.addAction("Новая игра")
-        new_game_action.triggered.connect(self.start_new_game)
-        
-        game_menu.addSeparator()
-
-        # Добавляем уровни сложности
-        for diff_name in DIFFICULTIES.keys():
-            action = game_menu.addAction(diff_name)
-            # Захватываем текущее значение diff_name через lambda
-            action.triggered.connect(lambda checked, d=diff_name: self.change_difficulty(d))
-
-    def change_difficulty(self, difficulty_name):
-        self.current_difficulty = difficulty_name
-        self.start_new_game()
-
-    def start_new_game(self):
-        width, height, mines = DIFFICULTIES[self.current_difficulty]
+    def start_new_game(self, difficulty_name):
+        width, height, mines = DIFFICULTIES[difficulty_name]
         self.game = Game(width, height, mines)
+        
+        self.menu_widget.btn_resume.setEnabled(True) # Включаем кнопку Resume
+        self.build_game_ui()
+        self.gui_timer.start(100)
+        self.stacked_widget.setCurrentWidget(self.game_container)
+        self.adjustSize()
 
-        # Создаем центральный виджет
-        central_widget = QWidget()
-        main_layout = QVBoxLayout()
-        main_layout.setSizeConstraint(QVBoxLayout.SetFixedSize) # Окно подстраивается под содержимое
+    def resume_game(self):
+        if self.game and self.game.state in (GameState.NOT_STARTED, GameState.PLAYING):
+            self.stacked_widget.setCurrentWidget(self.game_container)
+            self.adjustSize()
 
+    def return_to_menu(self):
+        self.stacked_widget.setCurrentWidget(self.menu_widget)
+        # Возвращаем фиксированный размер окна для меню
+        self.setMinimumSize(400, 600)
+        self.resize(400, 600)
+
+    def build_game_ui(self):
+        # Очищаем старый layout игры
+        while self.game_layout.count():
+            child = self.game_layout.takeAt(0)
+            if child.widget():
+                child.widget().deleteLater()
+                
         # Верхняя панель (HUD)
         hud_layout = QHBoxLayout()
-        self.mines_label = QLabel(f"Мин: {self.game.num_mines}")
-        self.timer_label = QLabel("Время: 0")
         
-        # Стилизуем HUD
-        font = self.mines_label.font()
-        font.setPointSize(14)
-        font.setBold(True)
-        self.mines_label.setFont(font)
-        self.timer_label.setFont(font)
-        self.timer_label.setAlignment(Qt.AlignRight)
-
+        # Кнопка Назад (Стрелка)
+        btn_back = QPushButton("←")
+        btn_back.setObjectName("BackButton")
+        btn_back.clicked.connect(self.return_to_menu)
+        hud_layout.addWidget(btn_back)
+        
+        # Иконка мины и количество
+        self.mines_label = QLabel(f"⚙ {self.game.num_mines}") # Используем ту же шестеренку как иконку
+        self.timer_label = QLabel("0S")
+        
         hud_layout.addWidget(self.mines_label)
+        hud_layout.addStretch() # Раздвигаем края
         hud_layout.addWidget(self.timer_label)
-
+        
+        self.game_layout.addLayout(hud_layout)
+        
         # Добавляем игровое поле
         self.board_widget = BoardWidget(self.game)
-
-        # Собираем всё вместе
-        main_layout.addLayout(hud_layout)
-        main_layout.addWidget(self.board_widget)
-        central_widget.setLayout(main_layout)
-        
-        self.setCentralWidget(central_widget)
-        self.adjustSize() # Подгоняем размер окна под новую сетку
+        self.game_layout.addWidget(self.board_widget)
 
     def update_hud(self):
-        """Обновление таймера, счетчика мин и проверка на победу/поражение."""
-        # Обновляем время
+        if not self.game: return
+        
         elapsed = self.game.get_elapsed_time()
-        self.timer_label.setText(f"Время: {elapsed}")
+        self.timer_label.setText(f"{elapsed}S")
 
-        # Обновляем оставшиеся мины
         mines_left = self.game.num_mines - self.game.flags_placed
-        self.mines_label.setText(f"Мин: {mines_left}")
+        self.mines_label.setText(f"⚙ {mines_left}")
 
-        # Проверка конца игры
         if self.game.state == GameState.WON:
             self.gui_timer.stop()
-            self.board_widget.update_board() # Финальная перерисовка (чтобы показать авто-флажки)
-            QMessageBox.information(self, "Победа!", f"Вы победили за {elapsed} секунд!")
-            self.start_new_game()
+            self.board_widget.update_board()
+            self.menu_widget.btn_resume.setEnabled(False) # Отключаем Resume
+            QMessageBox.information(self, "Victory!", f"You won in {elapsed} seconds!")
+            self.return_to_menu()
             
         elif self.game.state == GameState.LOST:
             self.gui_timer.stop()
             self.board_widget.update_board()
-            QMessageBox.critical(self, "Поражение", "Вы подорвались на мине!")
-            self.start_new_game()
+            self.menu_widget.btn_resume.setEnabled(False)
+            QMessageBox.critical(self, "Defeat", "You hit a mine!")
+            self.return_to_menu()

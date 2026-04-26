@@ -1,0 +1,142 @@
+/* Общий фон окна (Темно-серый) */
+QMainWindow {
+    background-color: #1a1a20;
+}
+
+/* Верхняя панель и меню */
+QMenuBar {
+    background-color: #1a1a20;
+    color: #ffffff;
+    padding: 2px;
+}
+QMenuBar::item:selected {
+    background-color: #2a2a32;
+    border-radius: 4px;
+}
+QMenu {
+    background-color: #212128;
+    color: #ffffff;
+    border: 1px solid #333;
+}
+QMenu::item:selected {
+    background-color: #a496db;
+    color: #000;
+}
+
+/* Тексты (Таймер и Мины) в главном окне */
+QLabel {
+    color: #ffffff;
+    font-family: "Segoe UI", Arial, sans-serif;
+}
+
+/* ---------------------------------------------------- */
+/* Стили для кнопок-ячеек игрового поля                 */
+/* ---------------------------------------------------- */
+
+/* Базовый вид закрытой ячейки (Приятный фиолетово-сиреневый) */
+CellButton {
+    background-color: #a496db;
+    border: none;
+    font-family: "Segoe UI", Arial, sans-serif;
+    font-weight: normal;
+    font-size: 16px;
+}
+
+/* Эффект наведения ТОЛЬКО на закрытую ячейку */
+CellButton[is_open="false"]:hover {
+    background-color: #b1a4e2;
+}
+
+/* Стиль ячейки, когда на ней стоит флажок */
+CellButton[is_flagged="true"] {
+    background-color: #a496db;
+    color: #1a1a20; 
+}
+
+/* Базовый вид ОТКРЫТОЙ ячейки */
+CellButton[is_open="true"] {
+    background-color: #1a1a20; 
+    border: 1px solid #2a2a32;
+    color: #ffffff; 
+}
+
+/* Эффект наведения на ОТКРЫТУЮ ячейку (чтобы она слегка подсвечивалась при попытке сделать Аккорд) */
+CellButton[is_open="true"]:hover {
+    background-color: #212128; 
+}
+
+/* Стиль для ячейки с миной (взрыв) */
+CellButton[is_mine="true"][is_open="true"] {
+    background-color: #ff5555; 
+    color: #ffffff;
+    border: none;
+}
+
+/* ---------------------------------------------------- */
+/* Главное меню и кнопки навигации                      */
+/* ---------------------------------------------------- */
+
+#MainMenuWidget {
+    background-color: #1a1a20;
+}
+
+#DifficultyLabel {
+    color: #ffffff;
+    font-size: 18px;
+    font-family: "Segoe UI", Arial, sans-serif;
+    qproperty-alignment: AlignCenter;
+}
+
+/* Округлые кнопки меню (New Game, Resume) */
+MenuButton {
+    background-color: transparent;
+    color: #ffffff;
+    border: 1px solid #33333b;
+    border-radius: 20px; /* Сильное скругление */
+    padding: 12px;
+    font-size: 16px;
+    font-family: "Segoe UI", Arial, sans-serif;
+}
+
+MenuButton:hover {
+    background-color: #2a2a32;
+    border: 1px solid #a496db;
+}
+
+MenuButton:pressed {
+    background-color: #a496db;
+    color: #1a1a20;
+}
+
+/* Кнопки переключения сложности (Стрелки) */
+NavButton {
+    background-color: transparent;
+    color: #ffffff;
+    border: none;
+    font-size: 24px;
+    font-weight: bold;
+}
+
+NavButton:hover {
+    color: #a496db;
+}
+
+/* Центральное лого-шестеренка (Эмодзи-заглушка) */
+#LogoLabel {
+    color: #a496db;
+    font-size: 120px;
+    qproperty-alignment: AlignCenter;
+}
+
+/* Кнопка "Назад" в самой игре */
+#BackButton {
+    background-color: transparent;
+    color: #ffffff;
+    border: none;
+    font-size: 24px;
+    font-weight: bold;
+    padding-right: 15px;
+}
+#BackButton:hover {
+    color: #a496db;
+}
