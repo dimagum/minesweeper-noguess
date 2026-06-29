@@ -5,13 +5,24 @@ from core.game import Game, GameState
 from gui.board_widget import BoardWidget
 from gui.main_menu import MainMenuWidget
 
+# Пресеты сложности: (ширина, высота, число мин).
+# Подобраны под no-guess генерацию: плавный рост размера И плотности мин,
+# плотность держится в пределах ~20% — так генерация поля остаётся быстрой
+# (доли секунды) и поле гарантированно проходится без угадывания.
+#   Уровень    Размер   Мин   Плотность
+#   Beginner    9×9      10    12.3%
+#   Easy       12×12     20    13.9%
+#   Medium     16×16     40    15.6%
+#   Hard       24×20     88    18.3%
+#   Huge       30×20    115    19.2%
+#   Extreme    40×30    235    19.6%
 DIFFICULTIES = {
     "Beginner": (9, 9, 10),
     "Easy": (12, 12, 20),
     "Medium": (16, 16, 40),
-    "Hard": (30, 16, 99),
-    "Huge": (30, 24, 150),
-    "Extreme": (40, 30, 250)
+    "Hard": (24, 20, 88),
+    "Huge": (30, 20, 115),
+    "Extreme": (40, 30, 235)
 }
 
 class MainWindow(QMainWindow):

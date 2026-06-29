@@ -14,15 +14,15 @@ class Game:
         self.width = width
         self.height = height
         self.num_mines = num_mines
-        
-        # До первого клика создаем пустую доску-"пустышку" без мин, 
+
+        # До первого клика создаем пустую доску-"пустышку" без мин,
         # чтобы GUI мог отрисовать сетку.
-        self.board = Board(width, height, 0) 
-        
+        self.board = Board(width, height, 0)
+
         self.state = GameState.NOT_STARTED
         self.flags_placed = 0
         self.opened_cells = 0
-        
+
         self.start_time = 0.0
         self.end_time = 0.0
 
@@ -39,7 +39,7 @@ class Game:
     def handle_left_click(self, x: int, y: int):
         if self.state in (GameState.WON, GameState.LOST):
             return
-        
+
         cell = self.board.get_cell(x, y)
         # Если клетка с флагом или уже открыта - одиночный клик ничего не делает
         if not cell or cell.is_flagged or cell.is_open:
@@ -69,12 +69,12 @@ class Game:
         """Обработка Аккорда (колесико мыши или ЛКМ+ПКМ)."""
         if self.state in (GameState.WON, GameState.LOST):
             return
-            
+
         cell = self.board.get_cell(x, y)
         # Аккорд работает только если кликнуть по ОТКРЫТОЙ клетке с цифрой
         if not cell or not cell.is_open or cell.adjacent_mines == 0:
             return
-            
+
         # Считаем флаги вокруг
         neighbors = self.board.get_neighbors(x, y)
         flags_count = sum(1 for n in neighbors if n.is_flagged)
@@ -84,7 +84,7 @@ class Game:
             for n in neighbors:
                 if not n.is_flagged and not n.is_open:
                     self._open_cell(n.x, n.y)
-                    
+
         self._check_win_condition()
 
     def _start_game(self, start_x: int, start_y: int):
@@ -97,24 +97,38 @@ class Game:
         self.start_time = time.time()
 
     def _open_cell(self, x: int, y: int):
-        """Рекурсивное открытие клеток."""
-        cell = self.board.get_cell(x, y)
-        if not cell or cell.is_open or cell.is_flagged:
+        """Открытие клетки с каскадным раскрытием нулей.
+
+        Реализовано ИТЕРАТИВНО (через явный стек), а не рекурсией: на больших
+        полях (напр. 40×30) каскад из нулей мог дать глубину рекурсии больше
+        лимита Python (~1000) и аварийно завершить игру."""
+        board = self.board
+        start = board.get_cell(x, y)
+        if not start or start.is_open or start.is_flagged:
             return
 
-        cell.is_open = True
-        self.opened_cells += 1
+        stack = [(x, y)]
+        while stack:
+            cx, cy = stack.pop()
+            cell = board.get_cell(cx, cy)
+            if not cell or cell.is_open or cell.is_flagged:
+                continue
 
-        # Если наткнулись на мину
-        if cell.is_mine:
-            self.state = GameState.LOST
-            self.end_time = time.time()
-            return
+            cell.is_open = True
+            self.opened_cells += 1
 
-        # Если открыли "0" - автоматически открываем всех соседей
-        if cell.adjacent_mines == 0:
-            for neighbor in self.board.get_neighbors(x, y):
-                self._open_cell(neighbor.x, neighbor.y)
+            # Если наткнулись на мину — поражение (это может быть только
+            # стартовая клетка каскада: соседи нуля минами не бывают).
+            if cell.is_mine:
+                self.state = GameState.LOST
+                self.end_time = time.time()
+                return
+
+            # Если открыли "0" — добавляем соседей в стек на открытие.
+            if cell.adjacent_mines == 0:
+                for neighbor in board.get_neighbors(cx, cy):
+                    if not neighbor.is_open and not neighbor.is_flagged:
+                        stack.append((neighbor.x, neighbor.y))
 
     def _handle_chording(self, x: int, y: int):
         """
@@ -150,7 +164,7 @@ class Game:
         if closed_cells_count == self.num_mines:
             self.state = GameState.WON
             self.end_time = time.time()
-            
+
             # Автоматически ставим флаги на все оставшиеся закрытые мины (для красоты)
             for y in range(self.height):
                 for x in range(self.width):

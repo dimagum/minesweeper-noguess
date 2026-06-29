@@ -2,108 +2,109 @@ import random
 from core.board import Board
 from solver.logic_solver import LogicSolver
 
+
 class Generator:
+    """No-guess генератор поля «Сапёра».
+
+    Стратегия «создать и проверить» с локальным поиском (мутациями):
+      1. Случайно расставляем мины (3x3 вокруг первого клика — всегда пусто).
+      2. Решатель симулирует прохождение чистой логикой.
+      3. Если застряли — переносим мину у «застрявшей» границы в глубину
+         (или наоборот), пересчитываем только затронутые цифры и пробуем снова.
+      4. Если мутации не помогают — генерируем поле заново.
+
+    Если решатель сказал «решаемо», поле гарантированно проходится без угадывания.
+    """
+
     @staticmethod
-    def generate_valid_board(width: int, height: int, num_mines: int, start_x: int, start_y: int) -> Board:
-        max_attempts = 200     # Максимум полных пересозданий поля
-        max_mutations = 100    # Максимум попыток сдвинуть мину (мутаций)
-        
+    def generate_valid_board(width: int, height: int, num_mines: int,
+                             start_x: int, start_y: int,
+                             max_attempts: int = 300,
+                             max_mutations: int = 80,
+                             rng: random.Random = None) -> Board:
+        rng = rng or random
+
         for attempt in range(max_attempts):
             board = Board(width, height, num_mines)
-            Generator._place_mines(board, start_x, start_y)
+            Generator._place_mines(board, start_x, start_y, rng)
             board.calculate_numbers()
-            
+
+            solver = LogicSolver(board)
             for mutation in range(max_mutations):
-                solver = LogicSolver(board)
                 if solver.is_solvable(start_x, start_y):
-                    print(f"Поле сгенерировано! Попыток: {attempt + 1}, Мутаций: {mutation}")
+                    board.is_noguess = True
                     return board
-                
-                # Поле не решилось. Пытаемся "распутать" тупик с помощью мутации
-                if not Generator._mutate_board(board, solver.opened, start_x, start_y):
-                    break # Если мутация не удалась (нет места), генерируем с нуля
-                    
-        # В крайне редком случае, если лимит превышен, возвращаем то, что есть
-        print("Внимание: Превышен лимит генерации. Возвращаем последнюю версию.")
+
+                # Поле застряло — пытаемся «распутать» тупик мутацией возле
+                # фактической границы, где решатель остановился.
+                if not Generator._mutate_board(board, solver.opened,
+                                               start_x, start_y, rng):
+                    break  # менять нечего — генерируем с нуля
+                solver = LogicSolver(board)
+
+        # Сюда попадаем лишь при экстремальной плотности мин. Возвращаем поле,
+        # но честно помечаем, что гарантия no-guess не достигнута.
+        board.is_noguess = False
+        print("Внимание: не удалось гарантировать no-guess за лимит попыток. "
+              "Стоит снизить плотность мин для этого размера поля.")
         return board
 
     @staticmethod
-    def _mutate_board(board: Board, opened: set, start_x: int, start_y: int) -> bool:
-        """Меняет местами мину на границе с пустой клеткой в неисследованной зоне."""
-        frontier = set()
-        unreached = set()
-        
-        # 1. Разделяем закрытые клетки на пограничные и неисследованные
-        for y in range(board.height):
-            for x in range(board.width):
+    def _mutate_board(board: Board, opened: set,
+                      start_x: int, start_y: int, rng: random.Random) -> bool:
+        """Меняет местами мину и пустую клетку, чтобы разрушить тупик.
+
+        Приоритет — клетки на границе открытой области (где решатель встал),
+        обмениваемые с клетками в ещё не исследованной глубине."""
+        width, height = board.width, board.height
+        grid = board.grid
+
+        frontier = []      # закрытые клетки, граничащие с открытыми
+        unreached = []     # закрытые клетки без открытых соседей
+        for y in range(height):
+            for x in range(width):
                 if (x, y) in opened:
                     continue
-                
-                # Проверяем соседей на наличие открытых клеток
-                is_frontier = False
-                for dy in [-1, 0, 1]:
-                    for dx in [-1, 0, 1]:
-                        if (x + dx, y + dy) in opened:
-                            is_frontier = True
-                            break
-                    if is_frontier:
-                        break
-                        
-                if is_frontier:
-                    frontier.add((x, y))
-                else:
-                    unreached.add((x, y))
-        
-        # 2. Группируем мины и пустые клетки
-        frontier_mines = [(x, y) for (x, y) in frontier if board.get_cell(x, y).is_mine]
-        frontier_safes = [(x, y) for (x, y) in frontier if not board.get_cell(x, y).is_mine]
-        
-        unreached_mines = [(x, y) for (x, y) in unreached if board.get_cell(x, y).is_mine]
-        unreached_safes = [(x, y) for (x, y) in unreached if not board.get_cell(x, y).is_mine]
-        
-        # Защищаем зону первого клика, чтобы туда случайно не перенеслась мина
-        safe_zone = {(start_x + dx, start_y + dy) for dx in [-1, 0, 1] for dy in [-1, 0, 1]}
+                is_frontier = any((nx, ny) in opened
+                                  for nx, ny in board.neighbor_coords(x, y))
+                (frontier if is_frontier else unreached).append((x, y))
+
+        frontier_mines = [(x, y) for (x, y) in frontier if grid[y][x].is_mine]
+        frontier_safes = [(x, y) for (x, y) in frontier if not grid[y][x].is_mine]
+        unreached_mines = [(x, y) for (x, y) in unreached if grid[y][x].is_mine]
+        unreached_safes = [(x, y) for (x, y) in unreached if not grid[y][x].is_mine]
+
+        # Не переносим мину в зону первого клика.
+        safe_zone = {(start_x + dx, start_y + dy)
+                     for dx in (-1, 0, 1) for dy in (-1, 0, 1)}
         unreached_mines = [p for p in unreached_mines if p not in safe_zone]
         unreached_safes = [p for p in unreached_safes if p not in safe_zone]
 
-        # 3. Выбираем пару для обмена (Мина на границе <-> Пустая в глубине)
-        # или наоборот (Пустая на границе <-> Мина в глубине)
-        c1, c2 = None, None
-        
         options = []
         if frontier_mines and unreached_safes:
             options.append((frontier_mines, unreached_safes))
         if frontier_safes and unreached_mines:
             options.append((frontier_safes, unreached_mines))
-            
-        if options:
-            group1, group2 = random.choice(options)
-            c1 = random.choice(group1)
-            c2 = random.choice(group2)
-            
-            # Обмениваем состояния клеток
-            cell1 = board.get_cell(*c1)
-            cell2 = board.get_cell(*c2)
-            cell1.is_mine, cell2.is_mine = cell2.is_mine, cell1.is_mine
-            
-            # Пересчитываем цифры
-            board.calculate_numbers()
-            return True
-            
-        return False # Нечего менять
+        if not options:
+            return False
+
+        group1, group2 = rng.choice(options)
+        (x1, y1) = rng.choice(group1)
+        (x2, y2) = rng.choice(group2)
+
+        c1, c2 = grid[y1][x1], grid[y2][x2]
+        c1.is_mine, c2.is_mine = c2.is_mine, c1.is_mine
+
+        # Инкрементально пересчитываем только затронутые клетки.
+        board.recalc_around(x1, y1)
+        board.recalc_around(x2, y2)
+        return True
 
     @staticmethod
-    def _place_mines(board: Board, start_x: int, start_y: int):
-        safe_zone = set()
-        for dy in [-1, 0, 1]:
-            for dx in [-1, 0, 1]:
-                safe_zone.add((start_x + dx, start_y + dy))
-
-        available_positions = [
-            (x, y) for x in range(board.width) for y in range(board.height)
-            if (x, y) not in safe_zone
-        ]
-
-        mine_positions = random.sample(available_positions, board.num_mines)
-        for x, y in mine_positions:
-            board.get_cell(x, y).is_mine = True
+    def _place_mines(board: Board, start_x: int, start_y: int, rng: random.Random):
+        safe_zone = {(start_x + dx, start_y + dy)
+                     for dx in (-1, 0, 1) for dy in (-1, 0, 1)}
+        available = [(x, y) for x in range(board.width)
+                     for y in range(board.height) if (x, y) not in safe_zone]
+        for x, y in rng.sample(available, board.num_mines):
+            board.grid[y][x].is_mine = True
