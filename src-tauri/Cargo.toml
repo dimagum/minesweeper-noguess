@@ -1,0 +1,17 @@
+[package]
+name = "noguess-desktop"
+version = "0.1.0"
+description = "Desktop (Tauri) shell for No-Guess Minesweeper"
+authors = ["Dmitry Guminov"]
+edition = "2024"
+rust-version = "1.90"
+
+[lib]
+name = "noguess_desktop"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2.7.1", features = [] }
+
+[dependencies]
+tauri = { version = "2.12.1", features = [] }

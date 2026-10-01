@@ -1,6 +1,6 @@
 # Minesweeper No-Guess
 
-Сапёр, в котором поле генерируется так, что ситуаций угадывания (50/50) не бывает: любой уровень проходится **чистой логикой**. Работает в браузере; десктоп-сборка (Tauri) — следующий этап.
+Сапёр, в котором поле генерируется так, что ситуаций угадывания (50/50) не бывает: любой уровень проходится **чистой логикой**. Работает в браузере и как десктоп-приложение (Tauri: macOS, Windows, Linux).
 
 ## Особенности
 
@@ -25,6 +25,7 @@ minesweeper-noguess/
 │   └── wasm/               # wasm-bindgen обёртка для браузера
 ├── web/                    # Vite + TypeScript: Canvas-поле, меню, темы
 │   └── src/worker.ts       #   генерация поля в Web Worker
+├── src-tauri/              # Tauri 2: десктоп-оболочка над web/ (иконка — icon.svg)
 └── legacy-python/          # исходная версия на Python + PyQt (будет удалена)
 ```
 
@@ -37,6 +38,18 @@ cd web && npm install && npm run dev
 ```
 
 `npm run dev` собирает WASM и запускает dev-сервер; `npm run build` — production-сборка в `web/dist/`.
+
+Десктоп-приложение (из папки `web/`):
+
+```bash
+npm run tauri dev
+```
+
+```bash
+npm run tauri build
+```
+
+Сборка кладёт пакеты в `target/release/bundle/` (на macOS — `.app` и `.dmg`). Собирать под Windows/Linux нужно на соответствующей ОС (или в CI).
 
 Тесты и бенчмарк ядра:
 

@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <!-- Исходник иконки приложения; иконки пересобираются командой tauri icon src-tauri/icon.svg -->
+  <rect x="100" y="100" width="824" height="824" rx="185" fill="#F1EADF"/>
+  <circle cx="512" cy="512" r="236" fill="none" stroke="#5B554C" stroke-width="34"/>
+  <circle cx="512" cy="512" r="84" fill="#5B554C"/>
+</svg>

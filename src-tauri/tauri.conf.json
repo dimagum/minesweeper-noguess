@@ -1,0 +1,43 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "No-Guess Minesweeper",
+  "version": "0.1.0",
+  "identifier": "io.github.noguess.minesweeper",
+  "build": {
+    "frontendDist": "../web/dist",
+    "devUrl": "http://localhost:5173",
+    "beforeDevCommand": "npm run dev",
+    "beforeBuildCommand": "npm run build"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "No-Guess Minesweeper",
+        "width": 900,
+        "height": 780,
+        "minWidth": 440,
+        "minHeight": 620,
+        "resizable": true,
+        "center": true,
+        "backgroundColor": "#F1EADF"
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data:"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "category": "PuzzleGame",
+    "shortDescription": "Minesweeper where every board is solvable by pure logic"
+  }
+}

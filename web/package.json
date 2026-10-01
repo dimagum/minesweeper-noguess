@@ -8,9 +8,11 @@
     "dev": "npm run wasm && vite",
     "build": "npm run wasm && tsc --noEmit && vite build",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "tauri": "cd .. && tauri"
   },
   "devDependencies": {
+    "@tauri-apps/cli": "^2.12.1",
     "typescript": "^7.0.2",
     "vite": "^8.3.2"
   }

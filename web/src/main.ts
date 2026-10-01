@@ -381,6 +381,9 @@ function formatTime(secs: number): string {
   return `${m}:${String(secs % 60).padStart(2, "0")}`;
 }
 
+// Системное контекстное меню (Reload / Inspect) в игре не нужно — ПКМ ставит флаги.
+document.addEventListener("contextmenu", (e) => e.preventDefault());
+
 initEngine()
   .then(() => {
     const app = new App();
