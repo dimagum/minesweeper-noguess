@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Minesweeper where every board is solvable by pure logic — no 50/50 guesses." />
+    <meta name="theme-color" content="#F1EADF" />
+    <title>No-Guess Minesweeper</title>
+  </head>
+  <body>
+    <main id="menu" class="screen">
+      <svg class="logo" viewBox="0 0 140 140" aria-hidden="true">
+        <circle cx="70" cy="70" r="46" fill="var(--fg)" />
+        <circle cx="70" cy="70" r="41" fill="var(--bg)" />
+        <circle cx="70" cy="70" r="16" fill="var(--fg)" />
+      </svg>
+      <h1 class="title">No-Guess Minesweeper</h1>
+
+      <div class="difficulty">
+        <button class="nav" id="diff-prev" aria-label="Previous difficulty">&lt;</button>
+        <div class="diff-text">
+          <div id="diff-name" class="diff-name">Beginner</div>
+          <div id="diff-info" class="diff-info">9 × 9 · 10 mines</div>
+        </div>
+        <button class="nav" id="diff-next" aria-label="Next difficulty">&gt;</button>
+      </div>
+
+      <div class="caption">THEME</div>
+      <div id="swatches" class="swatches" role="radiogroup" aria-label="Theme"></div>
+
+      <div class="caption">CONTROLS</div>
+      <div id="controls" class="segmented" role="radiogroup" aria-label="Controls">
+        <button role="radio" data-controls="classic">Classic</button>
+        <button role="radio" data-controls="touchpad">Touchpad</button>
+      </div>
+      <div id="controls-info" class="controls-info"></div>
+
+      <div class="menu-buttons">
+        <button id="btn-new" class="pill">New Game</button>
+        <button id="btn-resume" class="pill" disabled>Resume</button>
+      </div>
+      <div id="best" class="best"></div>
+    </main>
+
+    <main id="game" class="screen" hidden>
+      <div class="game-wrap">
+        <header id="hud" class="hud">
+          <button id="btn-back" class="icon" title="Menu (Esc)" aria-label="Back to menu">←</button>
+          <span id="hud-mines" class="hud-label">⚑ 10</span>
+          <span class="spacer"></span>
+          <button id="btn-hint" class="icon" title="Hint (H)" aria-label="Hint">?</button>
+          <button id="btn-restart" class="icon" title="New game (R)" aria-label="New game">↻</button>
+          <span class="spacer"></span>
+          <span id="hud-time" class="hud-label hud-time">0</span>
+        </header>
+        <div id="board-scroll" class="board-scroll">
+          <canvas id="board"></canvas>
+          <div id="overlay" class="overlay" hidden>
+            <div class="card">
+              <div id="ov-title" class="ov-title"></div>
+              <div id="ov-text" class="ov-text"></div>
+              <div class="ov-buttons">
+                <button id="ov-retry" class="pill small">Retry board</button>
+                <button id="ov-new" class="pill small">New game</button>
+                <button id="ov-menu" class="pill small">Menu</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div id="toast" class="toast" role="status" aria-live="polite"></div>
+      </div>
+    </main>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
