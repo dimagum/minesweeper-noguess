@@ -1,0 +1,7 @@
+[package]
+name = "noguess-core"
+version = "0.1.0"
+edition = "2024"
+description = "No-guess Minesweeper core: board, logic solver, generator, game state"
+
+[dependencies]

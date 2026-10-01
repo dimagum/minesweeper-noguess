@@ -1,2 +1,6 @@
 /venv
-/.venv
+/.venv__pycache__/
+*.pyc
+/target
+node_modules/
+dist/
