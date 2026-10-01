@@ -75,23 +75,31 @@ impl<'a> Solver<'a> {
         self.is_complete()
     }
 
+    /// Решатель, знающий ровно то, что видит игрок: открытые им клетки.
+    /// Флаги игрока не учитываются — они могут быть ошибочными.
+    pub fn from_opened(board: &'a Board, opened: &[bool]) -> Self {
+        let mut s = Solver::new(board);
+        for (i, &o) in opened.iter().enumerate() {
+            if o {
+                s.state[i] = OPEN;
+                s.opened += 1;
+            }
+        }
+        s
+    }
+
     /// Применяет правила до неподвижной точки.
     fn run(&mut self) {
-        loop {
-            // 1. Дешёвая логика одной цифры.
-            if self.apply_trivial_logic() {
-                continue;
-            }
-            // 2. Логика подмножеств.
-            if self.apply_subset_logic() {
-                continue;
-            }
-            // 3. Глобальный счётчик + перебор по компонентам (дорого).
-            if self.apply_global_and_csp() {
-                continue;
-            }
-            break;
-        }
+        while self.step() {}
+    }
+
+    /// Один шаг вывода: самое дешёвое правило, давшее хоть что-то новое.
+    /// `false` — решатель застрял (или всё решено).
+    pub fn step(&mut self) -> bool {
+        // 1. Дешёвая логика одной цифры.
+        // 2. Логика подмножеств.
+        // 3. Глобальный счётчик + перебор по компонентам (дорого).
+        self.apply_trivial_logic() || self.apply_subset_logic() || self.apply_global_and_csp()
     }
 
     pub fn is_complete(&self) -> bool {

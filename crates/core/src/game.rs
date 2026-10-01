@@ -5,6 +5,7 @@
 use crate::board::Board;
 use crate::generator::{self, GenError};
 use crate::rng::Rng;
+use crate::solver::Solver;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum GameState {
@@ -26,6 +27,15 @@ pub enum CellView {
     },
     /// Флаг, поставленный не на мину (показывается после поражения).
     WrongFlag,
+}
+
+/// Подсказка: клетка, о которой можно сделать вывод чистой логикой.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Hint {
+    pub x: usize,
+    pub y: usize,
+    /// `true` — в клетке мина (ставим флаг), `false` — клетку можно открыть.
+    pub mine: bool,
 }
 
 pub struct Game {
@@ -88,6 +98,37 @@ impl Game {
     }
     pub fn board(&self) -> &Board {
         &self.board
+    }
+
+    /// Следующий логический ход из того, что видит игрок: сначала безопасная
+    /// клетка, иначе мина без флага. Выводы делаются самыми дешёвыми
+    /// правилами, какие возможны, — подсказка «простая», насколько можно.
+    /// `None` — партия не идёт или вывести нечего.
+    pub fn hint(&self) -> Option<Hint> {
+        if self.state != GameState::Playing {
+            return None;
+        }
+        let mut solver = Solver::from_opened(&self.board, &self.open);
+        while solver.step() {
+            let mut mine = None;
+            for i in 0..self.open.len() {
+                if solver.is_opened(i) && !self.open[i] {
+                    return Some(self.hint_at(i, false));
+                }
+                if mine.is_none() && solver.is_flagged(i) && !self.flagged[i] {
+                    mine = Some(i);
+                }
+            }
+            if let Some(i) = mine {
+                return Some(self.hint_at(i, true));
+            }
+        }
+        None
+    }
+
+    fn hint_at(&self, i: usize, mine: bool) -> Hint {
+        let (x, y) = self.board.xy(i);
+        Hint { x, y, mine }
     }
 
     pub fn cell(&self, x: usize, y: usize) -> CellView {
@@ -301,6 +342,25 @@ mod tests {
         assert_eq!(g.state(), GameState::Lost);
         assert_eq!(g.cell(2, 0), CellView::Mine { exploded: true });
         assert_eq!(g.cell(2, 1), CellView::WrongFlag);
+    }
+
+    #[test]
+    fn hints_play_the_whole_game() {
+        // Играем только по подсказкам: на no-guess поле это всегда победа.
+        for seed in 0..20 {
+            let mut g = Game::new(16, 16, 40, seed);
+            g.open(8, 8).unwrap();
+            while g.state() == GameState::Playing {
+                let h = g.hint().expect("no-guess board must always have a hint");
+                if h.mine {
+                    assert!(g.board().is_mine(g.board().idx(h.x, h.y)));
+                    g.toggle_flag(h.x, h.y);
+                } else {
+                    g.open(h.x, h.y).unwrap();
+                }
+            }
+            assert_eq!(g.state(), GameState::Won);
+        }
     }
 
     #[test]

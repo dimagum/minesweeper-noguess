@@ -1,0 +1,12 @@
+[package]
+name = "noguess-wasm"
+version = "0.1.0"
+edition = "2024"
+description = "WebAssembly bindings for the no-guess Minesweeper core"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+noguess-core = { path = "../core" }
+wasm-bindgen = "0.2.129"
