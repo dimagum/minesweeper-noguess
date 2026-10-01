@@ -1,9 +1,6 @@
-/venv
-/.venv__pycache__/
-*.pyc
 /target
 node_modules/
 dist/
+.vite/
 /crates/wasm/pkg
 /web/wasm
-.vite/

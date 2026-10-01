@@ -1,7 +1,9 @@
 //! Сверка Rust-решателя с исходной Python-версией и проверки генератора.
 //!
-//! Фикстура `fixtures/parity.txt` создаётся скриптом `make_parity_fixture.py`
-//! на Python-решателе (legacy-python/). Каждая строка: поле, первый клик и
+//! Фикстура `fixtures/parity.txt` создана исходным Python-решателем
+//! (скрипт `crates/core/tests/make_parity_fixture.py` и код `legacy-python/`
+//! есть в истории git до коммита «Remove legacy Python version»).
+//! Каждая строка: поле, первый клик и
 //! вердикт «решаемо / нет». Rust-порт обязан выдавать тот же вердикт.
 
 use noguess_core::{Board, Rng, Solver, generate};

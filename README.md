@@ -25,8 +25,7 @@ minesweeper-noguess/
 │   └── wasm/               # wasm-bindgen обёртка для браузера
 ├── web/                    # Vite + TypeScript: Canvas-поле, меню, темы
 │   └── src/worker.ts       #   генерация поля в Web Worker
-├── src-tauri/              # Tauri 2: десктоп-оболочка над web/ (иконка — icon.svg)
-└── legacy-python/          # исходная версия на Python + PyQt (будет удалена)
+└── src-tauri/              # Tauri 2: десктоп-оболочка над web/ (иконка — icon.svg)
 ```
 
 ## Запуск
