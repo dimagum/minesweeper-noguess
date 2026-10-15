@@ -25,6 +25,15 @@
         <button class="nav" id="diff-next" aria-label="Next difficulty">&gt;</button>
       </div>
 
+      <div id="custom" class="custom" hidden>
+        <div class="custom-fields">
+          <label>Width <input id="custom-w" type="number" min="5" max="60" inputmode="numeric" /></label>
+          <label>Height <input id="custom-h" type="number" min="5" max="40" inputmode="numeric" /></label>
+          <label>Mines <input id="custom-m" type="number" min="1" inputmode="numeric" /></label>
+        </div>
+        <div id="custom-info" class="custom-info"></div>
+      </div>
+
       <div class="caption">THEME</div>
       <div id="swatches" class="swatches" role="radiogroup" aria-label="Theme"></div>
 
@@ -37,9 +46,39 @@
 
       <div class="menu-buttons">
         <button id="btn-new" class="pill">New Game</button>
+        <button id="btn-daily" class="pill daily">
+          Daily · <span id="daily-date"></span>
+          <span id="daily-status" class="daily-status"></span>
+        </button>
         <button id="btn-resume" class="pill" disabled>Resume</button>
       </div>
       <div id="best" class="best"></div>
+      <button id="btn-stats" class="link">Statistics</button>
+    </main>
+
+    <main id="stats" class="screen" hidden>
+      <h2 class="stats-title">Statistics</h2>
+      <div class="stats-wrap">
+        <table class="stats-table">
+          <thead>
+            <tr>
+              <th scope="col"></th>
+              <th scope="col">Played</th>
+              <th scope="col">Won</th>
+              <th scope="col">Best</th>
+              <th scope="col">Avg</th>
+              <th scope="col" title="Current / best win streak">Streak</th>
+            </tr>
+          </thead>
+          <tbody id="stats-body"></tbody>
+        </table>
+      </div>
+      <div id="stats-daily" class="stats-note"></div>
+      <div class="stats-note">Best and average times count only wins without hints.</div>
+      <div class="ov-buttons stats-buttons">
+        <button id="stats-back" class="pill small">Back</button>
+        <button id="stats-reset" class="pill small">Reset</button>
+      </div>
     </main>
 
     <main id="game" class="screen" hidden>
@@ -47,6 +86,7 @@
         <header id="hud" class="hud">
           <button id="btn-back" class="icon" title="Menu (Esc)" aria-label="Back to menu">←</button>
           <span id="hud-mines" class="hud-label">⚑ 10</span>
+          <span id="hud-title" class="hud-title"></span>
           <span class="spacer"></span>
           <button id="btn-hint" class="icon" title="Hint (H)" aria-label="Hint">?</button>
           <button id="btn-restart" class="icon" title="New game (R)" aria-label="New game">↻</button>

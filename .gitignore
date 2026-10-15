@@ -4,3 +4,4 @@ dist/
 .vite/
 /crates/wasm/pkg
 /web/wasm
+.DS_Store
