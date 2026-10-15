@@ -26,7 +26,7 @@ jobs:
             args: ""
     runs-on: ${{ matrix.platform }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Install Linux dependencies
         if: startsWith(matrix.platform, 'ubuntu')
@@ -43,7 +43,7 @@ jobs:
       - uses: taiki-e/install-action@v2
         with:
           tool: wasm-pack
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: lts/*
           cache: npm
@@ -51,14 +51,16 @@ jobs:
       - run: npm ci
         working-directory: web
 
-      # src-tauri лежит в корне, Tauri CLI — в web/node_modules.
-      # beforeBuildCommand (сборка WASM и веб-части) Tauri сам запускает в web/.
+      # src-tauri лежит в корне, Tauri CLI — в web/node_modules; вызываем его
+      # напрямую через node: скрипт, начинающийся с `npm`, tauri-action
+      # переписывает в `npm run ...`. beforeBuildCommand (WASM + веб-часть)
+      # Tauri сам запускает в web/.
       - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           projectPath: .
-          tauriScript: npm --prefix web exec -- tauri
+          tauriScript: node web/node_modules/@tauri-apps/cli/tauri.js
           args: ${{ matrix.args }}
           tagName: ${{ github.ref_type == 'tag' && github.ref_name || '' }}
           releaseName: No-Guess Minesweeper ${{ github.ref_name }}
@@ -66,4 +68,3 @@ jobs:
             Desktop builds of No-Guess Minesweeper.
             The apps are not code-signed: on macOS open the app with right-click → Open the first time; on Windows choose "More info → Run anyway".
           releaseDraft: true
-          uploadWorkflowArtifacts: true
