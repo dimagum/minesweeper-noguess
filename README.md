@@ -63,6 +63,16 @@ cargo test --release
 cargo run --release --example bench
 ```
 
+## CI и релизы
+
+*   **CI** (`.github/workflows/ci.yml`) — на каждый push в `main` и PR: `cargo fmt`, `clippy`, тесты ядра, сборка веб-версии.
+*   **Веб-версия** (`pages.yml`) — при push в `main` публикуется на GitHub Pages. Один раз нужно включить: *Settings → Pages → Source: GitHub Actions*.
+*   **Десктоп-релиз** (`release.yml`) — по тегу `v*` собираются macOS (Apple Silicon и Intel), Windows и Linux, результат — черновик релиза на GitHub:
+
+```bash
+git tag v0.1.0 && git push origin v0.1.0
+```
+
 ## Уровни сложности
 
 | Уровень      | Размер (Ш × В) | Мин | Плотность |
